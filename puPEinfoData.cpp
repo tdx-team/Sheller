@@ -1,4 +1,4 @@
-#include "puPEinfoData.h"
+ï»¿#include "puPEinfoData.h"
 
 
 void* PuPEInfo::m_pFileBase = nullptr;
@@ -29,25 +29,25 @@ PuPEInfo::~PuPEInfo()
 
 }
 
-// ÅĞ¶ÏÎÄ¼şÊÇ·ñ¿ÉÖ´ĞĞ
 BOOL PuPEInfo::IsPEFile()
 {
 	if (IMAGE_DOS_SIGNATURE != ((PIMAGE_DOS_HEADER)PuPEInfo::m_pFileBase)->e_magic) return FALSE;
 	
 	if (IMAGE_NT_SIGNATURE != ((PIMAGE_NT_HEADERS)PuPEInfo::m_pNtHeader)->Signature) return FALSE;
-
+	
 	return TRUE;
 }
 
-// ¼ÓÔØÎÄ¼şµ½ÄÚ´æ
 BOOL PuPEInfo::prOpenFile(const CString & PathName)
 {
-
 	m_strNamePath = PathName;
 
 	HANDLE hFile = CreateFile(PathName, GENERIC_READ | GENERIC_WRITE, FALSE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	
-	if ((int)hFile <= 0){ AfxMessageBox(L"µ±Ç°½ø³ÌÓĞ¿ÉÄÜ±»Õ¼ÓÃ»òÕßÒâÍâ´íÎó"); return FALSE; }
+	if ((int)hFile <= 0){ 
+		AfxMessageBox(L"æ‰“å¼€æ–‡ä»¶å¤±è´¥"); 
+		return FALSE; 
+	}
 
 	m_hFileHandle = hFile;
 
@@ -69,8 +69,11 @@ BOOL PuPEInfo::prOpenFile(const CString & PathName)
 	
 	PIMAGE_DOS_HEADER pDosHander = (PIMAGE_DOS_HEADER)PuPEInfo::m_pFileBase;
 
+#ifdef _WIN64
+	PIMAGE_NT_HEADERS pHeadres = (PIMAGE_NT_HEADERS)(pDosHander->e_lfanew + (DWORD64)m_pFileBase);
+#else
 	PIMAGE_NT_HEADERS pHeadres = (PIMAGE_NT_HEADERS)(pDosHander->e_lfanew + (LONG)m_pFileBase);
-
+#endif
 	PuPEInfo::m_pNtHeader = (void *)pHeadres;
 
 	if (PuPEInfo::OepFlag == FALSE)
@@ -81,7 +84,7 @@ BOOL PuPEInfo::prOpenFile(const CString & PathName)
 
 	m_SectionCount = pHeadres->FileHeader.NumberOfSections;
 	
-	if (!IsPEFile()){ free(m_pFileBase); PuPEInfo::m_pFileBase = nullptr; AfxMessageBox(L"²»ÊÇÒ»¸öÓĞĞ§µÄPEÎÄ¼ş"); return FALSE; }
+	if (!IsPEFile()){ free(m_pFileBase); PuPEInfo::m_pFileBase = nullptr; AfxMessageBox(L"Â²Â»ÃŠÃ‡Ã’Â»Â¸Ã¶Ã“ÃÃÂ§ÂµÃ„PEÃÃ„Â¼Ã¾"); return FALSE; }
 
 	PIMAGE_SECTION_HEADER pSection = IMAGE_FIRST_SECTION((PIMAGE_NT_HEADERS)PuPEInfo::m_pNtHeader);
 
@@ -100,6 +103,8 @@ DWORD PuPEInfo::RVAofFOA(const DWORD Rva)
 	for (DWORD i = 0; i < dwSectionCount; ++i)
 	{
 		if ((Rva >= (pSection->VirtualAddress)) && (Rva < ((pSection->VirtualAddress) + (pSection->SizeOfRawData)))) {
+			// DWORD offset = Rva - pSection->VirtualAddress;
+			// DWORD FOA = pSection->PointerToRawData + offset;
 			return (pSection->VirtualAddress + pSection->PointerToRawData);
 		}
 		++pSection;
@@ -107,7 +112,6 @@ DWORD PuPEInfo::RVAofFOA(const DWORD Rva)
 	return 0;
 }
 
-// ¸ù¾İÇø¶ÎÃû³Æ»ñÈ¡Çø¶ÎÊ×µØÖ·
 PIMAGE_SECTION_HEADER PuPEInfo::GetSectionAddress(const char* Base, const BYTE* SectionName)
 {
 	PIMAGE_NT_HEADERS pNt = (PIMAGE_NT_HEADERS)(((PIMAGE_DOS_HEADER)Base)->e_lfanew + Base);
@@ -123,7 +127,7 @@ PIMAGE_SECTION_HEADER PuPEInfo::GetSectionAddress(const char* Base, const BYTE* 
 	return 0;
 }
 
-// ÉèÖÃÎÄ¼şÆ«ÒÆÒÔ¼°ÎÄ¼ş´óĞ¡
+// Ã‰Ã¨Ã–ÃƒÃÃ„Â¼Ã¾Ã†Â«Ã’Ã†Ã’Ã”Â¼Â°ÃÃ„Â¼Ã¾Â´Ã³ÃÂ¡
 BOOL PuPEInfo::SetFileoffsetAndFileSize(const void* Base, const DWORD & offset, const DWORD size, const BYTE* Name)
 {
 	 PIMAGE_SECTION_HEADER Address = GetSectionAddress((char*)Base, Name);

@@ -69,17 +69,14 @@
     <ClInclude Include="HashOfFunction.h">
       <Filter>HASH</Filter>
     </ClInclude>
-    <ClInclude Include="zconf.h">
-      <Filter>Compression Data</Filter>
-    </ClInclude>
-    <ClInclude Include="zlib.h">
-      <Filter>Compression Data</Filter>
-    </ClInclude>
-    <ClInclude Include="lz4.h">
-      <Filter>lzCompression</Filter>
-    </ClInclude>
     <ClInclude Include="UnShell.h">
       <Filter>UnShell</Filter>
+    </ClInclude>
+    <ClInclude Include="lz4\include\lz4.h">
+      <Filter>lzCompression</Filter>
+    </ClInclude>
+    <ClInclude Include="quick\quicklz.h">
+      <Filter>lzCompression</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -107,11 +104,14 @@
     <ClCompile Include="HashOfFunction.cpp">
       <Filter>HASH</Filter>
     </ClCompile>
-    <ClCompile Include="lz4.cpp">
-      <Filter>lzCompression</Filter>
-    </ClCompile>
     <ClCompile Include="UnShell.cpp">
       <Filter>UnShell</Filter>
+    </ClCompile>
+    <ClCompile Include="lz4\include\lz4.c">
+      <Filter>lzCompression</Filter>
+    </ClCompile>
+    <ClCompile Include="quick\quicklz.c">
+      <Filter>lzCompression</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -123,5 +123,10 @@
     <Image Include="图片资源管理\Arlequin_masks_mask_32px_1076236_easyicon.net.ico">
       <Filter>资源文件</Filter>
     </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <MASM Include="x64.asm">
+      <Filter>源文件</Filter>
+    </MASM>
   </ItemGroup>
 </Project>

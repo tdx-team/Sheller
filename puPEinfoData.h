@@ -35,7 +35,7 @@ public:
 
 	HANDLE puFileHandle() { return m_hFileHandle; }
 
-	DWORD puOldOep(){ return this->m_OldOEP; }
+	DWORD64 puOldOep(){ return this->m_OldOEP; }
 
 	int puGetSectionCount() { return this->m_SectionCount; }
 

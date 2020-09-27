@@ -1,7 +1,8 @@
-#include "CompressionData.h"
+ï»¿#include "CompressionData.h"
 #include "puPEinfoData.h"
 #include "Stud\Stud.h"
-#include "lz4.h"
+#include "lz4/include/lz4.h"
+#include "quick/quicklz.h"
 #include "AddSection.h"
 
 _Stud* g_stu = nullptr;
@@ -15,7 +16,7 @@ CompressionData::CompressionData()
 	PuPEInfo obj_peInfo;
 
 	m_lpBase = obj_peInfo.puGetImageBase();
-	
+
 	m_SectionHeadre = obj_peInfo.puGetSection();
 
 	m_SectionCount = ((PIMAGE_NT_HEADERS)(obj_peInfo.puGetNtHeadre()))->FileHeader.NumberOfSections;
@@ -29,7 +30,7 @@ CompressionData::~CompressionData()
 {
 }
 
-// Ìí¼ÓÒ»¸öÇø¶Î¸øÑ¹ËõºóµÄÊı¾İÊ¹ÓÃ
+// æ·»åŠ ä¸€ä¸ªåŒºæ®µç»™å‹ç¼©åçš„æ•°æ®ä½¿ç”¨
 void CompressionData::AddCompreDataSection(const DWORD & size)
 {
 	BYTE Name[] = ".com";
@@ -47,21 +48,42 @@ void CompressionData::AddCompreDataSection(const DWORD & size)
 	obj_addSection.puAddNewSectionByData(Compresdata);
 }
 
-// Ñ¹ËõPEÇø¶ÎÊı¾İ
+BOOL CompressionData::EncryptionSectionData(
+	char* src,
+	int srclen,
+	char enkey)
+{
+	for (int i = 0; i < srclen; ++i)
+	{
+		*src ^= enkey;
+		src++;
+	}
+	return 1;
+}
+
+// å‹ç¼©PEåŒºæ®µæ•°æ®
 BOOL CompressionData::CompressSectionData()
 {
 	if ((fpFile = fopen("FileData.txt", "w+")) == NULL)
 	{
-		AfxMessageBox(L"ÎÄ¼ş´ò¿ªÊ§°Ü");
+		AfxMessageBox(L"æ–‡ä»¶æ‰“å¼€å¤±è´¥");
+	
 	}
-
-	m_studBase = LoadLibraryEx(L"E:\\VSÏîÄ¿\\¼Ó¿ÇÆ÷\\Release\\Stud.dll", NULL, DONT_RESOLVE_DLL_REFERENCES);
-
+	// "E:\\Sheller-master\\Release\\Stud.dll"
+#ifdef _WIN64
+	m_studBase = LoadLibraryEx(L"E:\\Sheller-master\\x64\\Release\\Stud.dll", NULL, DONT_RESOLVE_DLL_REFERENCES);
+#else
+	m_studBase = LoadLibraryEx(L"E:\\Sheller-master\\Release\\Stud.dll", NULL, DONT_RESOLVE_DLL_REFERENCES);
+#endif
 	g_stu = (_Stud*)GetProcAddress((HMODULE)m_studBase, "g_stud");
 
 	g_stu->s_OneSectionSizeofData = FALSE;
 
+#ifdef _WIN64
+	PIMAGE_NT_HEADERS pNt = (PIMAGE_NT_HEADERS)(((PIMAGE_DOS_HEADER)m_lpBase)->e_lfanew + (DWORD64)m_lpBase);
+#else
 	PIMAGE_NT_HEADERS pNt = (PIMAGE_NT_HEADERS)(((PIMAGE_DOS_HEADER)m_lpBase)->e_lfanew + (DWORD)m_lpBase);
+#endif
 
 	DWORD dSectionCount = pNt->FileHeader.NumberOfSections;
 
@@ -69,9 +91,9 @@ BOOL CompressionData::CompressSectionData()
 
 	PuPEInfo obj_peInfo;
 
-	m_maskAddress = obj_peInfo.puGetSectionAddress((char *)m_lpBase, (BYTE *)".mas");
+	m_maskAddress = obj_peInfo.puGetSectionAddress((char *)m_lpBase, (BYTE *)".UPX");
 
-	// ±ÜÃâÈç.textbssÎŞÊı¾İ
+	// é¿å…å¦‚.textbssæ— æ•°æ®
 	for (DWORD i = 0; i < dSectionCount; ++i)
 	{
 		if (psection->PointerToRawData != 0)
@@ -79,7 +101,7 @@ BOOL CompressionData::CompressSectionData()
 		++psection;
 	}
 
-	// pe±ê×¼´óĞ¡¶ÔÆëºó£¨¼ÓÔØ»ùÖ· + .text->pointertorawdataµÄÊı¾İ£©= ´óĞ¡
+	// peæ ‡å‡†å¤§å°å¯¹é½åï¼ˆåŠ è½½åŸºå€ + .text->pointertorawdataçš„æ•°æ®ï¼‰= å¤§å°
 	DWORD pStandardHeadersize = psection->PointerToRawData;
 
 	char* SaveCompressData = (char*)malloc(m_hFileSize);
@@ -90,10 +112,10 @@ BOOL CompressionData::CompressSectionData()
 
 	DWORD ComressTotalSize = 0;
 
-	// ²»Ñ¹ËõĞÂÔöµÄÇø¶Î£¨¼Ó¿ÇÇø¶Î£©
+	// ä¸å‹ç¼©æ–°å¢çš„åŒºæ®µï¼ˆåŠ å£³åŒºæ®µï¼‰
 	for (DWORD i = 0; i < dSectionCount - 2; ++i)
 	{
-		
+
 		DWORD DataSize = pSections->SizeOfRawData;
 
 		if (pSections->SizeOfRawData == 0)
@@ -105,38 +127,49 @@ BOOL CompressionData::CompressSectionData()
 			continue;
 		}
 
+#ifdef _WIN64
+		void* DataAddress = (void *)(pSections->PointerToRawData + (DWORD64)m_lpBase);
+#else
 		void* DataAddress = (void *)(pSections->PointerToRawData + (DWORD)m_lpBase);
+#endif
+
 
 		char* buf = NULL;
+//------------------------------------------------------------------------------------------
 
-		DWORD blen;
+		qlz_state_compress *state_compress = (qlz_state_compress *)malloc(sizeof(qlz_state_compress));
 
-		// ¼ÆËã°²È«»º³åÇø
-		blen = LZ4_compressBound(pSections->SizeOfRawData);
+		// è®¡ç®—å®‰å…¨ç¼“å†²åŒº
+		//const int blen = LZ4_compressBound(pSections->SizeOfRawData + 1);
 
-		// °²È«¿Õ¼äÉêÇë
+		const int blen = pSections->SizeOfRawData + 400;
+
+		// å®‰å…¨ç©ºé—´ç”³è¯·
 		if ((buf = (char*)malloc(sizeof(char) * blen)) == NULL)
 		{
 			AfxMessageBox(L"no enough memory!\n");
 			return -1;
 		}
 
-		DWORD dwCompressionSize = 0;
+		/* å‹ç¼© */
+		// const int dwCompressionSize = LZ4_compress_default((char*)DataAddress, buf, pSections->SizeOfRawData, blen);
+		const int dwCompressionSize = qlz_compress((char*)DataAddress, buf, blen, state_compress);
 
-		/* Ñ¹Ëõ */
-		dwCompressionSize = LZ4_compress_default((char*)DataAddress, buf, pSections->SizeOfRawData, blen);
-	
+//------------------------------------------------------------------------------------------
 		fwrite(&dwCompressionSize, sizeof(DWORD), 1, fpFile);
 
 		fflush(fpFile);
 
-		// ¼ÆËã»ºÇøÈ¥ºó´óĞ¡
+		// åŒºæ®µå¼‚æˆ–åŠ å¯†
+		// EncryptionSectionData(buf, dwCompressionSize, 'B');
+
+		// è®¡ç®—ç¼“åŒºå»åå¤§å°
 		memcpy(&g_stu->s_blen[i], &dwCompressionSize, sizeof(DWORD));
 
-		// ±£´æÑ¹ËõºóÇø¶ÎÊı¾İ£¨Æ´½ÓÃ¿Ò»¸öÑ¹ËõÇø¶Î£©
+		// ä¿å­˜å‹ç¼©ååŒºæ®µæ•°æ®ï¼ˆæ‹¼æ¥æ¯ä¸€ä¸ªå‹ç¼©åŒºæ®µï¼‰
 		memcpy(&SaveCompressData[ComressTotalSize], buf, dwCompressionSize);
 
-		// ±£´æÑ¹Ëõºó×Ü´óĞ¡
+		// ä¿å­˜å‹ç¼©åæ€»å¤§å°
 		ComressTotalSize += dwCompressionSize;
 
 		free(buf);
@@ -144,8 +177,8 @@ BOOL CompressionData::CompressSectionData()
 		++pSections;
 	}
 
-	// 0x400 + (Ñ¹ËõºóµÄ´óĞ¡ / 0x200 + ----Ñ¹ËõºóµÄ´óĞ¡ % 0x200 ? 1 : 0) 0x200;
-	// Ëã¶ÔÆëÊı¾İ
+	// 0x400 + (å‹ç¼©åçš„å¤§å° / 0x200 + ----å‹ç¼©åçš„å¤§å° % 0x200 ? 1 : 0) 0x200;
+	// å¯¹é½æ•°æ®
 	DWORD Size = 0;
 	if (ComressTotalSize % 0x200 == 0)
 	{
@@ -160,10 +193,10 @@ BOOL CompressionData::CompressSectionData()
 
 	DWORD ModifySize = Size - 0x400;
 
-	// ´´½¨Ò»¸öĞÂÇø¶Î
+	// åˆ›å»ºä¸€ä¸ªæ–°åŒºæ®µ
 	AddCompreDataSection(ModifySize);
 
-	// ÖØĞÂ¼ÓÔØ¸öÖĞPEÊı¾İ±£Ö¤ÏÂÃæÊı¾İ»ñÈ¡×îĞÂ
+	// é‡æ–°åŠ è½½ä¸ªä¸­PEæ•°æ®ä¿è¯ä¸‹é¢æ•°æ®è·å–æœ€æ–°
 	PuPEInfo obj_Peinfo;
 
 	CloseHandle(obj_Peinfo.puFileHandle());
@@ -173,7 +206,7 @@ BOOL CompressionData::CompressSectionData()
 	obj_Peinfo.puOpenFileLoad(FileName);
 
 	CompressionData obj_Compre;
-	// ĞŞ¸ÄĞÂÇø¶ÎµÄĞÅÏ¢Êı¾İ ÎÄ¼şÆ«ÒÆ 0x400  ´óĞ¡ Ñ¹ËõºóÊı¾İ¶ÔÆë´óĞ¡
+	// ä¿®æ”¹æ–°åŒºæ®µçš„ä¿¡æ¯æ•°æ® æ–‡ä»¶åç§» 0x400  å¤§å° å‹ç¼©åæ•°æ®å¯¹é½å¤§å°
 	BYTE Name[] = ".com";
 
 	obj_peInfo.puSetFileoffsetAndFileSize(m_lpBase, 0x400, ModifySize, Name);
@@ -182,42 +215,50 @@ BOOL CompressionData::CompressSectionData()
 
 	PIMAGE_SECTION_HEADER compSectionAddress = obj_peInfo.puGetSectionAddress((char*)m_lpBase, Nmase);
 
-	// ±£´æÄÚ´æµØÖ· ÓÃÓÚ½âÑ¹»ùÖ·
+	// ä¿å­˜å†…å­˜åœ°å€ ç”¨äºè§£å‹åŸºå€
 	g_stu->s_CompressionSectionRva = compSectionAddress->VirtualAddress;
 
-	// ¿½±´Ñ¹ËõºóµÄÊı¾İ(¶ÔÆë) --> ĞÂ¼ÓµÄÇø¶Î
+	// æ‹·è´å‹ç¼©åçš„æ•°æ®(å¯¹é½) --> æ–°åŠ çš„åŒºæ®µ
+#ifdef  _WIN64
+	memcpy((PVOID64)(compSectionAddress->PointerToRawData + (DWORD64)m_lpBase), SaveCompressData, ModifySize);
+#else
 	memcpy((void*)(compSectionAddress->PointerToRawData + (DWORD)m_lpBase), SaveCompressData, ModifySize);
-
-	// Æ´½Ó±ê×¼PEÍ· + Ñ¹ËõÊı¾İµÄÇø¶Î + ×Ô¼ºµÄÇø¶Î
+#endif //  _WIN64
+	// æ‹¼æ¥æ ‡å‡†PEå¤´ + å‹ç¼©æ•°æ®çš„åŒºæ®µ + è‡ªå·±çš„åŒºæ®µ
 	char* ComressNewBase = (char*)malloc(Size + m_maskAddress->SizeOfRawData);
 
 	memset(ComressNewBase, 0, (Size + m_maskAddress->SizeOfRawData));
 
-	// Æ´½Ó±ê×¼PE
+	// æ‹¼æ¥æ ‡å‡†PE
 	memcpy(ComressNewBase, m_lpBase, pStandardHeadersize);
 
-	// Æ´½ÓÑ¹ËõºóµÄÈ«²¿Çø¶Î(µÚÒ»¸öÍ·ĞÅÏ¢)
+	
+#ifdef _WIN64
+	// æ‹¼æ¥å‹ç¼©åçš„å…¨éƒ¨åŒºæ®µ(ç¬¬ä¸€ä¸ªå¤´ä¿¡æ¯)
+	memcpy(&ComressNewBase[pStandardHeadersize], (PVOID64)(compSectionAddress->PointerToRawData + (DWORD64)m_lpBase), ComressTotalSize);
+	memcpy(&ComressNewBase[Size], (PVOID64)(m_maskAddress->PointerToRawData + (DWORD64)m_lpBase), m_maskAddress->SizeOfRawData);
+#else
 	memcpy(&ComressNewBase[pStandardHeadersize], (void*)(compSectionAddress->PointerToRawData + (DWORD)m_lpBase), ComressTotalSize);
-
-	// Æ´½Ó¼Ó¿ÇÇø¶ÎÊı¾İ
+	// æ‹¼æ¥åŠ å£³åŒºæ®µæ•°æ®
 	memcpy(&ComressNewBase[Size], (void *)(m_maskAddress->PointerToRawData + (DWORD)m_lpBase), m_maskAddress->SizeOfRawData);
+#endif // _WIN64
 
 	DWORD dwWrite = 0;	OVERLAPPED OverLapped = { 0 };
 
-	// Çå¿ÕÊı¾İÄ¿Â¼±í(ÊÕÎ²¹¤×÷)
+	// æ¸…ç©ºæ•°æ®ç›®å½•è¡¨(æ”¶å°¾å·¥ä½œ)
 	CleanDirectData(ComressNewBase, ComressTotalSize, Size);
 
-	// ´´½¨ÎÄ¼ş
+	// åˆ›å»ºæ–‡ä»¶
 	HANDLE Handle = CreateFile(L"MaskCompre.exe", GENERIC_READ | GENERIC_WRITE, FALSE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 
-	// Ğ´Èëexe³ÌĞòÍê³ÉÑ¹Ëõ
+	// å†™å…¥exeç¨‹åºå®Œæˆå‹ç¼©
 	int nRet = WriteFile(Handle, ComressNewBase, (Size + m_maskAddress->SizeOfRawData), &dwWrite, &OverLapped);
 
-	// ¹Ø±Õ¾ä±ú
+	// å…³é—­å¥æŸ„
 	CloseHandle(Handle);
 
-	// ¿½±´µ½ÎÄ¼şÂ·¾¶ÏÂ
- 	nRet = CopyFile(L"MaskCompre.exe", L"C:\\Users\\Administrator\\Desktop\\CompressionMask.exe", FALSE);
+	// æ‹·è´åˆ°æ–‡ä»¶è·¯å¾„ä¸‹
+	nRet = CopyFile(L"MaskCompre.exe", L"C:\\Users\\Administrator\\Desktop\\CompressionMask.exe", FALSE);
 
 	if (!nRet)
 		AfxMessageBox(L"CopyFile failure");
@@ -230,7 +271,7 @@ BOOL CompressionData::CompressSectionData()
 	return TRUE;
 }
 
-// ÅĞ¶ÏÕæÕıµÄÇø¶ÎÊı¾İ´óĞ¡£¨Î´¶ÔÆë£©
+// åˆ¤æ–­çœŸæ­£çš„åŒºæ®µæ•°æ®å¤§å°ï¼ˆæœªå¯¹é½ï¼‰
 DWORD CompressionData::IsSectionSize(DWORD MiscVirtualsize, DWORD sizeOfRawData)
 {
 	if (MiscVirtualsize > sizeOfRawData)
@@ -242,15 +283,18 @@ DWORD CompressionData::IsSectionSize(DWORD MiscVirtualsize, DWORD sizeOfRawData)
 	return 0;
 }
 
-// Çå¿ÕÊı¾İÄ¿Â¼µÈÊı¾İ
+// æ¸…ç©ºæ•°æ®ç›®å½•ç­‰æ•°æ®
 BOOL CompressionData::CleanDirectData(const char* NewAddress, const DWORD & CompresSize, const DWORD & Size)
 {
 	if ((fpFile = fopen("FileData.txt", "a+")) == NULL)
 	{
-		AfxMessageBox(L"ÎÄ¼ş´ò¿ªÊ§°Ü");
+		AfxMessageBox(L"æ–‡ä»¶æ‰“å¼€å¤±è´¥");
 	}
-
+#ifdef _WIN64
+	PIMAGE_NT_HEADERS pNt = (PIMAGE_NT_HEADERS)(((PIMAGE_DOS_HEADER)NewAddress)->e_lfanew + (DWORD64)NewAddress);
+#else
 	PIMAGE_NT_HEADERS pNt = (PIMAGE_NT_HEADERS)(((PIMAGE_DOS_HEADER)NewAddress)->e_lfanew + (DWORD)NewAddress);
+#endif
 
 	PIMAGE_DATA_DIRECTORY pDirectory = (PIMAGE_DATA_DIRECTORY)pNt->OptionalHeader.DataDirectory;
 
@@ -259,7 +303,7 @@ BOOL CompressionData::CleanDirectData(const char* NewAddress, const DWORD & Comp
 	g_stu->s_SectionCount = dwSectionCount;
 
 	int k = 0;
-	// ±£´æ\Çå¿ÕÊı¾İÄ¿Â¼±í
+	// ä¿å­˜\æ¸…ç©ºæ•°æ®ç›®å½•è¡¨
 	for (DWORD i = 0; i < 16; ++i)
 	{
 		memcpy(&g_stu->s_DataDirectory[i][0], &pDirectory->VirtualAddress, sizeof(DWORD));
@@ -275,7 +319,7 @@ BOOL CompressionData::CleanDirectData(const char* NewAddress, const DWORD & Comp
 
 	PIMAGE_SECTION_HEADER pSection = IMAGE_FIRST_SECTION(pNt);
 
-	// ±£´æ\Çå¿ÕÇø¶ÎÎÄ¼ş´óĞ¡¼°ÎÄ¼şÆ«ÒÆ
+	// ä¿å­˜\æ¸…ç©ºåŒºæ®µæ–‡ä»¶å¤§å°åŠæ–‡ä»¶åç§»
 	for (DWORD i = 0; i < dwSectionCount - 2; ++i)
 	{
 		memcpy(&g_stu->s_SectionOffsetAndSize[i][0], &pSection->SizeOfRawData, sizeof(DWORD));
@@ -289,8 +333,8 @@ BOOL CompressionData::CleanDirectData(const char* NewAddress, const DWORD & Comp
 		++pSection;
 	}
 
-	// ×îºóÒ»¸öÇø¶ÎÊÇ¿ÇÇø¶Î ĞÅÏ¢²»±ä ĞŞ¸ÄÎÄ¼şÆ«ÒÆ
-	// ¸Ä±äÎÄ¼şÆ«ÒÆ¶ÔÆëºóÎÄ¼şÆ«ÒÆµÄµØ·½
+	// æœ€åä¸€ä¸ªåŒºæ®µæ˜¯å£³åŒºæ®µ ä¿¡æ¯ä¸å˜ ä¿®æ”¹æ–‡ä»¶åç§»
+	// æ”¹å˜æ–‡ä»¶åç§»å¯¹é½åæ–‡ä»¶åç§»çš„åœ°æ–¹
 	pSection->PointerToRawData = Size;
 
 	fclose(fpFile);

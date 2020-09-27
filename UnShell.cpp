@@ -1,10 +1,12 @@
 #include "UnShell.h"
 #include "./Stud/Stud.h"
 #include <malloc.h>
-#include "lz4.h"
+#include "lz4/include/lz4.h"
 #include "puPEinfoData.h"
 
 extern _Stud* g_stu;
+
+#define NEWSECITONNAME ".UPX"
 
 UnShell::UnShell()
 {
@@ -50,9 +52,7 @@ UnShell::~UnShell()
 // 恢复压缩的数据
 BOOL UnShell::RepCompressionData()
 {
-	// 把压缩的数据都申请空间保存--->文件200对齐拼接
-	// 加载stub中的数据里面保存了区段数据大小
-	m_studBase = LoadLibraryEx(L"E:\\VS项目\\加壳器\\Release\\Stud.dll", NULL, DONT_RESOLVE_DLL_REFERENCES);
+	m_studBase = LoadLibraryEx(L"E:\\Sheller-master\\x64\\Release\\Stud.dll", NULL, DONT_RESOLVE_DLL_REFERENCES);
 
 	g_stu = (_Stud*)GetProcAddress((HMODULE)m_studBase, "g_stud");
 
@@ -169,7 +169,7 @@ BOOL UnShell::DeleteSectionInfo()
 
 	// 清空加载的区段数据 修改不了里面数据
 	DWORD old = 0;
-	BYTE Name[] = ".mas";
+	BYTE Name[] = ".UPX";
 	BYTE Name1[] = ".com";
 	PuPEInfo pePu;
 
@@ -210,7 +210,8 @@ BOOL UnShell::SaveUnShell()
 	memcpy(&UnShellNewFile[0x400], Sectionbuf, TotaldwSize);
 
 	// 写入exe程序完成压缩
-	DWORD dwWrite = 0; OVERLAPPED OverLapped;
+	DWORD dwWrite = 0; 
+	OVERLAPPED OverLapped = { 0, };
 
 	// 创建文件
 	HANDLE Handle = CreateFile(L"C:\\Users\\Administrator\\Desktop\\UnShellNewPro.exe", GENERIC_READ | GENERIC_WRITE, FALSE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);

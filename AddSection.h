@@ -62,8 +62,6 @@ private:
 	// 新区段
 	PIMAGE_SECTION_HEADER NewpSection = { 0 };
 	// 保存原始OEP
-	DWORD OldOep = 0;
+	DWORD64 OldOep = 0;
 };
-
-
 #endif

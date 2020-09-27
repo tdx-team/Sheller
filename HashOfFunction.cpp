@@ -1,4 +1,4 @@
-#include "HashOfFunction.h"
+ï»¿#include "HashOfFunction.h"
 
 HashofFunction::HashofFunction()
 {
@@ -10,19 +10,21 @@ HashofFunction::~HashofFunction()
 
 }
 
-// »ñÈ¡Ä£¿é»ùÖ·
+#ifdef _WIN64
+
+#else
 DWORD HashofFunction::GetModule(const DWORD Hash)
 {
 	DWORD	nDllBase = 0;
 	__asm{
-	/*Ö÷Ä£¿é*/
+	/*Ã–Ã·Ã„Â£Â¿Ã©*/
 		pushad
 		push		Hash;
 		call		GetModulVA
 		mov			nDllBase, eax;
 		popad
 
-	/*º¯Êı1£º±éÀúPEB_LDR_DATAÁ´±íHASH¼ÓÃÜ*/
+	/*ÂºÂ¯ÃŠÃ½1Â£ÂºÂ±Ã©Ã€ÃºPEB_LDR_DATAÃÂ´Â±Ã­HASHÂ¼Ã“ÃƒÃœ*/
 	GetModulVA :
 		push		ebp;
 		mov			ebp, esp;
@@ -39,8 +41,8 @@ DWORD HashofFunction::GetModule(const DWORD Hash)
 		mov			esi, dword ptr[esi + 0x0C];
 		mov			esi, dword ptr[esi + 0x1C];
 	tag_Modul:
-		mov			dword ptr[ebp - 0x8], esi;	// ±£´æLDR_DATA_LIST_ENTRY
-		mov			ebx, dword ptr[esi + 0x20];	// DLLµÄÃû³ÆÖ¸Õë(Ó¦¸ÃÖ¸ÏòÒ»¸ö×Ö·û´®)
+		mov			dword ptr[ebp - 0x8], esi;	// Â±Â£Â´Ã¦LDR_DATA_LIST_ENTRY
+		mov			ebx, dword ptr[esi + 0x20];	// DLLÂµÃ„ÃƒÃ»Â³Ã†Ã–Â¸Ã•Ã«(Ã“Â¦Â¸ÃƒÃ–Â¸ÃÃ²Ã’Â»Â¸Ã¶Ã—Ã–Â·Ã»Â´Â®)
 		mov			eax, dword ptr[ebp + 0x8];
 		push		eax;
 		push		ebx;						// +0xC
@@ -48,7 +50,7 @@ DWORD HashofFunction::GetModule(const DWORD Hash)
 		test		eax, eax;
 		jnz			_ModulSucess
 		mov			esi, dword ptr[ebp - 0x8];
-		mov			esi, [esi];					// ±éÀúÏÂÒ»¸ö
+		mov			esi, [esi];					// Â±Ã©Ã€ÃºÃÃ‚Ã’Â»Â¸Ã¶
 		LOOP		tag_Modul
 	_ModulSucess :
 		mov			esi, dword ptr[ebp - 0x8];
@@ -61,7 +63,7 @@ DWORD HashofFunction::GetModule(const DWORD Hash)
 		pop			ebp;
 		ret
 
-	/*º¯Êı2£ºHASH½âÃÜËã·¨£¨¿í×Ö·û½âÃÜ£©*/
+	/*ÂºÂ¯ÃŠÃ½2Â£ÂºHASHÂ½Ã¢ÃƒÃœÃ‹Ã£Â·Â¨Â£Â¨Â¿Ã­Ã—Ã–Â·Ã»Â½Ã¢ÃƒÃœÂ£Â©*/
 	HashModulVA :
 		push		ebp;
 		mov			ebp, esp;
@@ -71,15 +73,15 @@ DWORD HashofFunction::GetModule(const DWORD Hash)
 		push		ecx;
 		push		edx;
 		push		esi;
-		// »ñÈ¡×Ö·û´®¿ªÊ¼¼ÆËã
+		// Â»Ã±ÃˆÂ¡Ã—Ã–Â·Ã»Â´Â®Â¿ÂªÃŠÂ¼Â¼Ã†Ã‹Ã£
 		mov			esi, [ebp + 0x8];
 		test		esi, esi;
 		jz			tag_failuers
 		xor			ecx, ecx;
 		xor			eax, eax;
 	tag_loops:
-		mov			al, [esi + ecx];		// »ñÈ¡×Ö½Ú¼ÓÃÜ
-		test		al, al					// 0ÔòÍË³ö
+		mov			al, [esi + ecx];		// Â»Ã±ÃˆÂ¡Ã—Ã–Â½ÃšÂ¼Ã“ÃƒÃœ
+		test		al, al					// 0Ã”Ã²ÃÃ‹Â³Ã¶
 		jz			tag_ends
 		mov			ebx, [ebp - 0x04];
 		shl			ebx, 0x19;
@@ -92,7 +94,7 @@ DWORD HashofFunction::GetModule(const DWORD Hash)
 		inc			ecx;
 		jmp			tag_loops
 	tag_ends :
-		mov			ebx, [ebp + 0x0C];		// »ñÈ¡HASH
+		mov			ebx, [ebp + 0x0C];		// Â»Ã±ÃˆÂ¡HASH
 		mov			edx, [ebp - 0x04];
 		xor			eax, eax;
 		cmp			ebx, edx;
@@ -113,18 +115,17 @@ DWORD HashofFunction::GetModule(const DWORD Hash)
 	return nDllBase;
 }
 
-// »ñÈ¡º¯ÊıµØÖ·
 DWORD HashofFunction::GetProcAddress(const DWORD dllvalues, const DWORD Hash)
 {
 	DWORD FunctionAddress = 0;
 	__asm{
 		pushad;
-		push		Hash;						// Hash¼ÓÃÜµÄº¯ÊıÃû³Æ
-		push		dllvalues;					// Ä£¿é»ùÖ·.dll
+		push		Hash;						// HashÂ¼Ã“ÃƒÃœÂµÃ„ÂºÂ¯ÃŠÃ½ÃƒÃ»Â³Ã†
+		push		dllvalues;					// Ã„Â£Â¿Ã©Â»Ã¹Ã–Â·.dll
 		call		GetHashFunVA;				// GetProcess
-		mov			FunctionAddress, eax;		// ¡î ±£´æµØÖ·
+		mov			FunctionAddress, eax;		// Â¡Ã® Â±Â£Â´Ã¦ÂµÃ˜Ã–Â·
 		popad;
-		// ×Ô¶¨Òåº¯Êı¼ÆËãHashÇÒ¶Ô±È·µ»ØÕıÈ·µÄº¯Êı
+		// Ã—Ã”Â¶Â¨Ã’Ã¥ÂºÂ¯ÃŠÃ½Â¼Ã†Ã‹Ã£HashÃ‡Ã’Â¶Ã”Â±ÃˆÂ·ÂµÂ»Ã˜Ã•Ã½ÃˆÂ·ÂµÃ„ÂºÂ¯ÃŠÃ½
 	GetHashFunVA:
 		push		ebp;
 		mov			ebp, esp;
@@ -137,61 +138,61 @@ DWORD HashofFunction::GetProcAddress(const DWORD dllvalues, const DWORD Hash)
 		mov			ecx, 12;
 		mov			eax, 0CCCCCCCCh;
 		rep	stos	dword ptr es : [edi];
-		// ÒÔÉÏ¿ª±ÙÕ»Ö¡²Ù×÷£¨Debug°æ±¾Ä£Ê½£©
-		mov			eax, [ebp + 0x8];				// ¡î kernel32.dll(MZ)
+		// Ã’Ã”Ã‰ÃÂ¿ÂªÂ±Ã™Ã•Â»Ã–Â¡Â²Ã™Ã—Ã·Â£Â¨DebugÂ°Ã¦Â±Â¾Ã„Â£ÃŠÂ½Â£Â©
+		mov			eax, [ebp + 0x8];				// Â¡Ã® kernel32.dll(MZ)
 		mov			dword ptr[ebp - 0x8], eax;
-		mov			ebx, [ebp + 0x0c];				// ¡î GetProcAddress HashÖµ
+		mov			ebx, [ebp + 0x0c];				// Â¡Ã® GetProcAddress HashÃ–Âµ
 		mov			dword ptr[ebp - 0x0c], ebx;
-		// »ñÈ¡PEÍ·ÓëRVA¼°ENT
+		// Â»Ã±ÃˆÂ¡PEÃÂ·Ã“Ã«RVAÂ¼Â°ENT
 		mov			edi, [eax + 0x3C];				// e_lfanew
 		lea			edi, [edi + eax];				// e_lfanew + MZ = PE
-		mov			dword ptr[ebp - 0x10], edi;		// ¡î ±£´æPE£¨VA£©
-		// »ñÈ¡ENT
-		mov			edi, dword ptr[edi + 0x78];		// »ñÈ¡µ¼³ö±íRVA
-		lea			edi, dword ptr[edi + eax];		// µ¼³ö±íVA
-		mov[ebp - 0x14], edi;						// ¡î ±£´æµ¼³ö±íVA
-		// »ñÈ¡º¯ÊıÃû³ÆÊıÁ¿
+		mov			dword ptr[ebp - 0x10], edi;		// Â¡Ã® Â±Â£Â´Ã¦PEÂ£Â¨VAÂ£Â©
+		// Â»Ã±ÃˆÂ¡ENT
+		mov			edi, dword ptr[edi + 0x78];		// Â»Ã±ÃˆÂ¡ÂµÂ¼Â³Ã¶Â±Ã­RVA
+		lea			edi, dword ptr[edi + eax];		// ÂµÂ¼Â³Ã¶Â±Ã­VA
+		mov[ebp - 0x14], edi;						// Â¡Ã® Â±Â£Â´Ã¦ÂµÂ¼Â³Ã¶Â±Ã­VA
+		// Â»Ã±ÃˆÂ¡ÂºÂ¯ÃŠÃ½ÃƒÃ»Â³Ã†ÃŠÃ½ÃÂ¿
 		mov			ebx, [edi + 0x18];
-		mov			dword ptr[ebp - 0x18], ebx;		// ¡î ±£´æº¯ÊıÃû³ÆÊıÁ¿
-		// »ñÈ¡ENT
-		mov			ebx, [edi + 0x20];				// »ñÈ¡ENT(RVA)
-		lea			ebx, [eax + ebx];				// »ñÈ¡ENT(VA)
-		mov			dword ptr[ebp - 0x20], ebx;		// ¡î ±£´æENT(VA)
-		// ±éÀúENT ½âÃÜ¹şÏ£Öµ¶Ô±È×Ö·û´®
+		mov			dword ptr[ebp - 0x18], ebx;		// Â¡Ã® Â±Â£Â´Ã¦ÂºÂ¯ÃŠÃ½ÃƒÃ»Â³Ã†ÃŠÃ½ÃÂ¿
+		// Â»Ã±ÃˆÂ¡ENT
+		mov			ebx, [edi + 0x20];				// Â»Ã±ÃˆÂ¡ENT(RVA)
+		lea			ebx, [eax + ebx];				// Â»Ã±ÃˆÂ¡ENT(VA)
+		mov			dword ptr[ebp - 0x20], ebx;		// Â¡Ã® Â±Â£Â´Ã¦ENT(VA)
+		// Â±Ã©Ã€ÃºENT Â½Ã¢ÃƒÃœÂ¹Ã¾ÃÂ£Ã–ÂµÂ¶Ã”Â±ÃˆÃ—Ã–Â·Ã»Â´Â®
 		mov			edi, dword ptr[ebp - 0x18];
 		mov			ecx, edi;
 		xor			esi, esi;
 		mov			edi, dword ptr[ebp - 0x8];
 		jmp			_WHILE
-		// Íâ²ã´óÑ­»·
+		// ÃÃ¢Â²Ã£Â´Ã³Ã‘Â­Â»Â·
 		_WHILE :
 		mov			edx, dword ptr[ebp + 0x0c];		// HASH
 		push		edx;
-		mov			edx, dword ptr[ebx + esi * 4];	// »ñÈ¡µÚÒ»¸öº¯ÊıÃû³ÆµÄRVA
-		lea			edx, [edi + edx];				// »ñÈ¡Ò»¸öº¯ÊıÃû³ÆµÄVAµØÖ·
-		push		edx;							// ENT±íÖĞµÚÒ»¸ö×Ö·û´®µØÖ·
+		mov			edx, dword ptr[ebx + esi * 4];	// Â»Ã±ÃˆÂ¡ÂµÃšÃ’Â»Â¸Ã¶ÂºÂ¯ÃŠÃ½ÃƒÃ»Â³Ã†ÂµÃ„RVA
+		lea			edx, [edi + edx];				// Â»Ã±ÃˆÂ¡Ã’Â»Â¸Ã¶ÂºÂ¯ÃŠÃ½ÃƒÃ»Â³Ã†ÂµÃ„VAÂµÃ˜Ã–Â·
+		push		edx;							// ENTÂ±Ã­Ã–ÃÂµÃšÃ’Â»Â¸Ã¶Ã—Ã–Â·Ã»Â´Â®ÂµÃ˜Ã–Â·
 		call		_STRCMP
 		cmp			eax, 0;
 		jnz			_SUCESS
 		inc			esi;
 		LOOP		_WHILE
 		jmp			_ProgramEnd
-		// ¶Ô±È³É¹¦Ö®ºó»ñÈ¡Ñ­»·´ÎÊı£¨ÏÂ±ê£©cx±£´æÏÂ±êÊı
+		// Â¶Ã”Â±ÃˆÂ³Ã‰Â¹Â¦Ã–Â®ÂºÃ³Â»Ã±ÃˆÂ¡Ã‘Â­Â»Â·Â´ÃÃŠÃ½Â£Â¨ÃÃ‚Â±ÃªÂ£Â©cxÂ±Â£Â´Ã¦ÃÃ‚Â±ÃªÃŠÃ½
 	_SUCESS :
-		// »ñÈ¡EOTµ¼³öĞòºÅ±íÄÚÈİ
+		// Â»Ã±ÃˆÂ¡EOTÂµÂ¼Â³Ã¶ÃÃ²ÂºÃ…Â±Ã­Ã„ÃšÃˆÃ
 		mov			ecx, esi
 		mov			ebx, dword ptr[ebp - 0x14];
 		mov			esi, dword ptr[ebx + 0x24];
 		mov			ebx, dword ptr[ebp - 0x8];
-		lea			esi, [esi + ebx];				// »ñÈ¡EOTµÄVA
+		lea			esi, [esi + ebx];				// Â»Ã±ÃˆÂ¡EOTÂµÃ„VA
 		xor			edx, edx
-		mov			dx, [esi + ecx * 2];			// ×¢ÒâË«×Ö »ñÈ¡ĞòºÅ
-		// »ñÈ¡EATµØÖ·±íRVA
+		mov			dx, [esi + ecx * 2];			// Ã—Â¢Ã’Ã¢Ã‹Â«Ã—Ã– Â»Ã±ÃˆÂ¡ÃÃ²ÂºÃ…
+		// Â»Ã±ÃˆÂ¡EATÂµÃ˜Ã–Â·Â±Ã­RVA
 		mov			esi, dword ptr[ebp - 0x14];		// Export VA
 		mov			esi, [esi + 0x1C];
 		mov			ebx, dword ptr[ebp - 0x8];
-		lea			esi, [esi + ebx]				// »ñÈ¡EATµÄVA			
-		mov			eax, [esi + edx * 4]			// ·µ»ØÖµeax£¨GetProcessµØÖ·£©
+		lea			esi, [esi + ebx]				// Â»Ã±ÃˆÂ¡EATÂµÃ„VA			
+		mov			eax, [esi + edx * 4]			// Â·ÂµÂ»Ã˜Ã–ÂµeaxÂ£Â¨GetProcessÂµÃ˜Ã–Â·Â£Â©
 		lea			eax, [eax + ebx]
 		jmp			_ProgramEnd
 
@@ -204,7 +205,7 @@ DWORD HashofFunction::GetProcAddress(const DWORD dllvalues, const DWORD Hash)
 		pop			ebp;
 		ret			0x8;
 
-		// Ñ­»·¶Ô±ÈHASHÖµ
+		// Ã‘Â­Â»Â·Â¶Ã”Â±ÃˆHASHÃ–Âµ
 	_STRCMP:
 		push		ebp;
 		mov			ebp, esp;
@@ -214,14 +215,14 @@ DWORD HashofFunction::GetProcAddress(const DWORD dllvalues, const DWORD Hash)
 		push		ecx;
 		push		edx;
 		push		esi;
-		// »ñÈ¡×Ö·û´®¿ªÊ¼¼ÆËã
+		// Â»Ã±ÃˆÂ¡Ã—Ã–Â·Ã»Â´Â®Â¿ÂªÃŠÂ¼Â¼Ã†Ã‹Ã£
 		mov			esi, [ebp + 0x8];
 		xor			ecx, ecx;
 		xor			eax, eax;
 
 	tag_loop:
-		mov			al, [esi + ecx];		// »ñÈ¡×Ö½Ú¼ÓÃÜ
-		test		al, al;					// 0ÔòÍË³ö
+		mov			al, [esi + ecx];		// Â»Ã±ÃˆÂ¡Ã—Ã–Â½ÃšÂ¼Ã“ÃƒÃœ
+		test		al, al;					// 0Ã”Ã²ÃÃ‹Â³Ã¶
 		jz			tag_end;
 		mov			ebx, [ebp - 0x04];
 		shl			ebx, 0x19;
@@ -234,7 +235,7 @@ DWORD HashofFunction::GetProcAddress(const DWORD dllvalues, const DWORD Hash)
 		jmp			tag_loop
 
 	tag_end :
-		mov			ebx, [ebp + 0x0C];		// »ñÈ¡HASH
+		mov			ebx, [ebp + 0x0C];		// Â»Ã±ÃˆÂ¡HASH
 		mov			edx, [ebp - 0x04];
 		xor			eax, eax;
 		cmp			ebx, edx;
@@ -256,3 +257,4 @@ DWORD HashofFunction::GetProcAddress(const DWORD dllvalues, const DWORD Hash)
 	}
 	return FunctionAddress;
 }
+#endif 

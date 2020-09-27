@@ -1,5 +1,13 @@
-#include "AddSection.h"
+ï»¿#include "AddSection.h"
 #include "puPEinfoData.h"
+
+// x64 asm 
+#ifdef _WIN64
+extern "C" void __stdcall AsmCountTemp(PVOID dwdata);
+extern "C" void __stdcall AsmCountTemp1(PVOID dwdata);
+#else
+
+#endif
 
 
 char* AddSection::newlpBase = nullptr;
@@ -26,7 +34,6 @@ AddSection::~AddSection()
 
 }
 
-// ĞŞ¸ÄÇø¶ÎÊıÁ¿
 BOOL AddSection::ModifySectionNumber()
 {
 	PIMAGE_NT_HEADERS pNtHeaders = (PIMAGE_NT_HEADERS)this->pNtHeadre;
@@ -40,21 +47,38 @@ BOOL AddSection::ModifySectionNumber()
 	return TRUE;
 }
 
-// ĞŞ¸ÄÇø¶ÎĞÅÏ¢(RVA\´óĞ¡\ÊôĞÔ)
+// ÃÃÂ¸Ã„Ã‡Ã¸Â¶ÃÃÃ…ÃÂ¢(RVA\Â´Ã³ÃÂ¡\ÃŠÃ´ÃÃ”)
 BOOL AddSection::ModifySectionInfo(const BYTE* Name, const DWORD & size)
 {
+#ifdef _WIN64
+	DWORD64 pSectionAddress = (DWORD64)pSectionHeadre;
+#else
 	DWORD pSectionAddress = (DWORD)pSectionHeadre;
-	// »ñÈ¡×îºóÒ»¸öÇø¶Î½á¹¹µÄµØÖ·(Ä©Î²£¬ÏÂÒ»¸ö¿ªÊ¼³ö)
+#endif
 	pSectionAddress = pSectionAddress + SectionSizeof - 0x28;
-	// ±£´æÉÏÒ»¸öµÄÇø¶ÎĞÅÏ¢
+
 	PIMAGE_SECTION_HEADER PtrpSection = (PIMAGE_SECTION_HEADER)pSectionAddress;
-	// ĞÂÇø¶ÎµØÖ·
+
 	pSectionAddress += 0x28;
 	NewpSection = (PIMAGE_SECTION_HEADER)pSectionAddress;
-	// ĞŞ¸ÄĞÂÇø¶ÎÃû³Æ
+	
 	memcpy(NewpSection->Name, Name, sizeof(Name));
 	DWORD dwtemps = PtrpSection->VirtualAddress + PtrpSection->SizeOfRawData;
-	// ÄÚ´æ¶ÔÆëĞŞ¸´£¨0x1000£©
+
+	DWORD Temp = 0;
+
+#ifdef _WIN64
+	// x64ä¸‹ä½¿ç”¨ï¼Œå› ä¸ºä¸æ¶‰åŠ__int64ç±»å‹ï¼Œæ‰€ä»¥æ±‡ç¼–ä½¿ç”¨åŒä¸€å¥—å³å¯
+	AsmCountTemp(&dwtemps);
+	NewpSection->VirtualAddress = dwtemps;
+	Temp = PtrpSection->SizeOfRawData + PtrpSection->PointerToRawData;
+	AsmCountTemp1(&Temp);
+	// check arg
+	if (!dwtemps || !Temp)
+		return 0;
+
+#else
+
 	__asm{
 		pushad;
 		mov		esi, dwtemps;
@@ -75,13 +99,9 @@ BOOL AddSection::ModifySectionInfo(const BYTE* Name, const DWORD & size)
 		popad
 	}
 	NewpSection->VirtualAddress = dwtemps;
-	// ÎÄ¼ş¶ÔÆëĞŞ¸´
-	/*
-		È±ÉÙÒ»²½ÅĞ¶Ï£ºËäÈ»ÕâÖÖÇé¿ö¼«ÉÙÊı
-			ÅĞ¶ÏÊÇ·ñÎÄ¼şÄ©Î²£¬Èç¹û²»ÊÇÄ©Î²µØÖ·£¬Ê¹ÓÃÎÄ¼şÄ©Î²µØÖ·+1£¨·ñÔòÓĞ¿ÉÄÜ»á¸²¸ÇÒ»Ğ©Êı¾İ£©
-	*/
-	DWORD Temp = PtrpSection->SizeOfRawData + PtrpSection->PointerToRawData;
-	// ¶ÔÆë²âÊÔÊı¾İ DWORD Temp = 0x00AA4567;
+
+	Temp = PtrpSection->SizeOfRawData + PtrpSection->PointerToRawData;
+
 	__asm{
 		pushad;
 		mov		esi, Temp;
@@ -99,20 +119,19 @@ BOOL AddSection::ModifySectionInfo(const BYTE* Name, const DWORD & size)
 	FileSucess:
 		popad
 	}
-	// ĞÂÇø¶Î±£´æ¶ÔÆëºóµÄÊı¾İ±£´æ
+
+#endif // _WIN64
 	NewpSection->PointerToRawData = Temp;
-	// ĞÂÇø¶Î´óĞ¡(0x1000)´óĞ¡
 	NewpSection->SizeOfRawData = size;
 	NewpSection->Misc.VirtualSize = NewpSection->SizeOfRawData;
-	// Çø¶ÎÊôĞÔ¿É¶Á¿ÉĞ´¿ÉÖ´ĞĞ
 	NewpSection->Characteristics = 0xE00000E0;
 	return TRUE;
 }
 
-// ĞŞ¸ÄÈë¿Úµã
+// ÃÃÂ¸Ã„ÃˆÃ«Â¿ÃšÂµÃ£
 BOOL AddSection::ModifyProgramEntryPoint()
 {
-	// Èë¿ÚµãµÈÓÚVirtualAddress
+	// ÃˆÃ«Â¿ÃšÂµÃ£ÂµÃˆÃ“ÃšVirtualAddress
 	PIMAGE_NT_HEADERS pNt = (PIMAGE_NT_HEADERS)pNtHeadre;
 
 	pNt->OptionalHeader.AddressOfEntryPoint = NewpSection->VirtualAddress;
@@ -120,7 +139,7 @@ BOOL AddSection::ModifyProgramEntryPoint()
 	return TRUE;
 }
 
-// ĞŞ¸Ä¾µÏñ»ùÖ·´óĞ¡¼°È¥µôËæ»úµØÖ·
+// ÃÃÂ¸Ã„Â¾ÂµÃÃ±Â»Ã¹Ã–Â·Â´Ã³ÃÂ¡Â¼Â°ÃˆÂ¥ÂµÃ´Ã‹Ã¦Â»ÃºÂµÃ˜Ã–Â·
 BOOL AddSection::ModifySizeofImage()
 {
 	PIMAGE_NT_HEADERS pNt = (PIMAGE_NT_HEADERS)pNtHeadre;
@@ -132,16 +151,12 @@ BOOL AddSection::ModifySizeofImage()
 	return TRUE;
 }
 
-// Ôö¼ÓĞÂµÄ×Ö½Ú(Ò»¶¨×îºóÔÚµ÷ÓÃ)
+// Ã”Ã¶Â¼Ã“ÃÃ‚ÂµÃ„Ã—Ã–Â½Ãš(Ã’Â»Â¶Â¨Ã—Ã®ÂºÃ³Ã”ÃšÂµÃ·Ã“Ãƒ)
 BOOL AddSection::AddNewSectionByteData(const DWORD & size)
 {
-	// ÉêÇëĞÂµÄ¶Ñ¿Õ¼ä
 	newlpBase = (char *)malloc(FileSize + size);
-	// ³õÊ¼»¯¿Õ¼ä
 	memset(newlpBase, 0, (FileSize + size));
-	// ¿½±´ĞŞ¸ÄºóµÄÊı¾İµ½ĞÂÄÚ´æ¿Õ¼ä
 	memcpy(newlpBase, pFileBaseData, FileSize);
-	// ÊÍ·ÅÔ­À´µÄ¿Õ¼ä
 	free(pFileBaseData);
 
 	DWORD dWriteSize = 0; OVERLAPPED OverLapped = { 0 };

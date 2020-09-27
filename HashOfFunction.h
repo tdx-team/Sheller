@@ -22,7 +22,7 @@ public:
 
 private:
 	/*
-		Hash加密参照表(有可能用到的)：
+			0x228C4218			KERNEL32.DLL
 			0xec1c6278;			kernel32.dll
 			0xc0d832c7;			LoadlibraryExa
 			0x4FD18963;			ExitPorcess

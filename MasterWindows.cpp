@@ -1,4 +1,4 @@
-// MasterWindows.cpp : ÊµÏÖÎÄ¼ş
+ï»¿// MasterWindows.cpp : ÃŠÂµÃÃ–ÃÃ„Â¼Ã¾
 //
 
 #include "stdafx.h"
@@ -11,9 +11,9 @@
 #include "CompressionData.h"
 #include "UnShell.h"
 
-// MasterWindows ¶Ô»°¿ò
-
+// MasterWindows
 IMPLEMENT_DYNAMIC(MasterWindows, CDialogEx)
+#define NEWSECITONNAME ".UPX"
 
 MasterWindows::MasterWindows(CWnd* pParent /*=NULL*/)
 	: CDialogEx(MasterWindows::IDD, pParent)
@@ -43,36 +43,39 @@ BEGIN_MESSAGE_MAP(MasterWindows, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON2, &MasterWindows::OnBnClickedButton2)
 END_MESSAGE_MAP()
 
-// MasterWindows ÏûÏ¢´¦Àí³ÌĞò
+// MasterWindows ÃÃ»ÃÂ¢Â´Â¦Ã€Ã­Â³ÃŒÃÃ²
 
 BOOL MasterWindows::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	/*ÖØĞÂÉèÖÃÍ¼±ê*/
+	ChangeWindowMessageFilter(WM_DROPFILES, MSGFLT_ADD);
+	ChangeWindowMessageFilter(0x0049, MSGFLT_ADD);
+
+	/*Ã–Ã˜ÃÃ‚Ã‰Ã¨Ã–ÃƒÃÂ¼Â±Ãª*/
 	SetIcon(LoadIcon(AfxGetApp()->m_hInstance, MAKEINTRESOURCE(IDI_ICON1)), TRUE);
 
 	return TRUE; 
 }
 
-// Ò»¼üÅÌ¼Ó¿Ç
+// Ã’Â»Â¼Ã¼Ã…ÃŒÂ¼Ã“Â¿Ã‡
 void MasterWindows::OnBnClickedButton1()
 {
-	// ¡î ÏÈÔö¼ÓĞÂÇø~¶ÎºóÑ¹Ëõ
+	// â˜† å…ˆå¢åŠ æ–°åŒº~æ®µåå‹ç¼©
 	PuPEInfo obj_Peinfo;
 
-	// 1. ĞÂÔöÇø¶Î
+	// 1. æ–°å¢åŒºæ®µ
 	if (NewSection())
-		AfxMessageBox(L"Ìí¼ÓĞÂÇø¶Î³É¹¦");
+		AfxMessageBox(L"æ·»åŠ æ–°åŒºæ®µæˆåŠŸ");
 	else
-		AfxMessageBox(L"Ìí¼ÓĞÂÇø¶ÎÊ§°Ü");
+		AfxMessageBox(L"æ·»åŠ æ–°åŒºæ®µå¤±è´¥");
 
 	CloseHandle(obj_Peinfo.puFileHandle()); UpdateData(TRUE);
 
 	obj_Peinfo.puOpenFileLoad(m_MasterStaticTextStr);
 
 
-	// 2. Ñ¹ËõÈ«²¿Çø¶Î Ñ¹ËõµÄÊ±ºò²»Çå¿ÕÊı¾İÄ¿Â¼±íÒÔ¼°Çø¶Î´óĞ¡£¨²»Ñ¹ËõĞÂÔöÇø¶Î£©
+	// 2. å‹ç¼©å…¨éƒ¨åŒºæ®µ å‹ç¼©çš„æ—¶å€™ä¸æ¸…ç©ºæ•°æ®ç›®å½•è¡¨ä»¥åŠåŒºæ®µå¤§å°ï¼ˆä¸å‹ç¼©æ–°å¢åŒºæ®µï¼‰
 	CompressionData obj_ComperData;
 
 	CloseHandle(obj_Peinfo.puFileHandle()); UpdateData(TRUE);
@@ -84,13 +87,13 @@ void MasterWindows::OnBnClickedButton1()
 	else
 		AfxMessageBox(L"CompressSection Seucess!");
 
-	CloseHandle(obj_Peinfo.puFileHandle()); 
+	CloseHandle(obj_Peinfo.puFileHandle());
 
 	m_MasterStaticTextStr = "C:\\Users\\Administrator\\Desktop\\CompressionMask.exe";
 
 	obj_Peinfo.puOpenFileLoad(m_MasterStaticTextStr);
 
-	// 3. StudÊı¾İ²Ù×÷...
+	// 3. Studæ•°æ®æ“ä½œ...
 	studData obj_stuData;
 
 	obj_stuData.puLoadLibraryStud();
@@ -106,16 +109,14 @@ void MasterWindows::OnBnClickedButton1()
 	else
 		AfxMessageBox(L"StudWrite failure!");
 
-	 // 4¡¢ÊÕÎ²¹¤×÷
-	 CloseHandle(obj_Peinfo.puFileHandle());
+	// 4ã€æ”¶å°¾å·¥ä½œ
+	CloseHandle(obj_Peinfo.puFileHandle());
 }
 
-// ÏìÓ¦ÎÄ¼şÍÏ×§
+
 void MasterWindows::OnDropFiles(HDROP hDropInfo)
 {
-	// 1. »ñÈ¡ÍÏ×§ÊıÄ¿
-	int DropCount = DragQueryFile(hDropInfo, -1, NULL, 0);
-	// 2. ±£´æ»ñÈ¡µÄÂ·¾¶
+	int DropCount = DragQueryFile(hDropInfo, -1, NULL, 0); 
 	char wcStr[MAX_PATH] = {};
 	for (int i = 0; i < DropCount; ++i)
 	{
@@ -123,16 +124,13 @@ void MasterWindows::OnDropFiles(HDROP hDropInfo)
 		DragQueryFileA(hDropInfo, i, wcStr, MAX_PATH);
 		m_MasterStaticTextStr = wcStr;
 	}
-	// 3. ¸üĞÂÏÔÊ¾
 	UpdateData(FALSE);
-	// 4. ÏÔÊ¾PEĞÅÏ¢£¨°üº¬Çø¶Î²é¿´£©
 	ShowPEInfoData(m_MasterStaticTextStr);
-	// 5. ÊÍ·ÅÄÚ´æ
 	DragFinish(hDropInfo);
 	CDialogEx::OnDropFiles(hDropInfo);
 }
 
-// ÏÔÊ¾PEÊı¾İ
+// 
 void MasterWindows::ShowPEInfoData(const CString & FileName)
 {
 	PuPEInfo obj_puPe; CString Tempstr;	DWORD TempdwCode = 0;
@@ -146,7 +144,7 @@ void MasterWindows::ShowPEInfoData(const CString & FileName)
 
 	PIMAGE_OPTIONAL_HEADER pOption = (PIMAGE_OPTIONAL_HEADER)&pNtHeadre->OptionalHeader;
 
-	// Çø¶ÎÊıÁ¿
+	// Ã‡Ã¸Â¶ÃÃŠÃ½ÃÂ¿
 	TempdwCode = pFileHeadre->NumberOfSections;
 	Tempstr.Format(L"%d", TempdwCode);
 	SetDlgItemText(IDC_EDIT9, Tempstr);
@@ -156,44 +154,47 @@ void MasterWindows::ShowPEInfoData(const CString & FileName)
 	Tempstr.Format(L"%08X", TempdwCode);
 	SetDlgItemText(IDC_EDIT1, Tempstr);
 
-	// Ä¬ÈÏ¼ÓÔØ»ùÖ·
+	// Ã„Â¬ÃˆÃÂ¼Ã“Ã”Ã˜Â»Ã¹Ã–Â·
 	TempdwCode = pOption->ImageBase;
 	Tempstr.Format(L"%08X", TempdwCode);
 	SetDlgItemText(IDC_EDIT3, Tempstr);
-
-	// ±êÖ¾×Ö
+	
+	// Â±ÃªÃ–Â¾Ã—Ã–
 	TempdwCode = pOption->Magic;
 	Tempstr.Format(L"%04X", TempdwCode);
 	SetDlgItemText(IDC_EDIT2, Tempstr);
 
-	// Êı¾İÄ¿Â¼¸öÊı
+	// ÃŠÃ½Â¾ÃÃ„Â¿Ã‚Â¼Â¸Ã¶ÃŠÃ½
 	TempdwCode = pOption->NumberOfRvaAndSizes;
 	Tempstr.Format(L"%08X", TempdwCode);
 	SetDlgItemText(IDC_EDIT7, Tempstr);
 
-	// ÆğÊ¼´úÂëÏà¶ÔĞéÄâµØÖ·
+	// Ã†Ã°ÃŠÂ¼Â´ÃºÃ‚Ã«ÃÃ Â¶Ã”ÃÃ©Ã„Ã¢ÂµÃ˜Ã–Â·
 	TempdwCode = pOption->BaseOfCode;
 	Tempstr.Format(L"%08X", TempdwCode);
 	SetDlgItemText(IDC_EDIT4, Tempstr);
 
-	// ÆğÊ¼Êı¾İÏà¶ÔµØÖ·
+#ifdef _WIN64
+
+#else
 	TempdwCode = pOption->BaseOfData;
 	Tempstr.Format(L"%08X", TempdwCode);
 	SetDlgItemText(IDC_EDIT5, Tempstr);
+#endif
 
-	// ¿é¶ÔÆëÁ¦¶È
+	// Â¿Ã©Â¶Ã”Ã†Ã«ÃÂ¦Â¶Ãˆ
 	TempdwCode = pOption->SectionAlignment;
 	Tempstr.Format(L"%08X", TempdwCode);
 	SetDlgItemText(IDC_EDIT6, Tempstr);
 
-	// ÎÄ¼ş¶ÔÆëÁ¦¶È
+	// ÃÃ„Â¼Ã¾Â¶Ã”Ã†Ã«ÃÂ¦Â¶Ãˆ
 	TempdwCode = pOption->FileAlignment;
 	Tempstr.Format(L"%08X", TempdwCode);
 	SetDlgItemText(IDC_EDIT8, Tempstr);
 
 }
 
-// ¼ÓÔØÇø¶ÎĞÅÏ¢
+// Â¼Ã“Ã”Ã˜Ã‡Ã¸Â¶ÃÃÃ…ÃÂ¢
 void MasterWindows::OnBnClickedButton4()
 {
 	SectionInfo obj_section;
@@ -201,25 +202,26 @@ void MasterWindows::OnBnClickedButton4()
 	return;
 }
 
-// ĞÂÇø¶ÎÌí¼Ó£¨¿Ç£©
+// ÃÃ‚Ã‡Ã¸Â¶ÃÃŒÃ­Â¼Ã“Â£Â¨Â¿Ã‡Â£Â©
 void MasterWindows::OnBnClickedButton9()
 {
 	if (NewSection())
-		AfxMessageBox(L"Ìí¼ÓĞÂÇø¶Î³É¹¦");
+		AfxMessageBox(L"ÃŒÃ­Â¼Ã“ÃÃ‚Ã‡Ã¸Â¶ÃÂ³Ã‰Â¹Â¦");
 	else
-		AfxMessageBox(L"Ìí¼ÓĞÂÇø¶ÎÊ§°Ü");
+		AfxMessageBox(L"ÃŒÃ­Â¼Ã“ÃÃ‚Ã‡Ã¸Â¶ÃÃŠÂ§Â°Ãœ");
 }
 
-// Çø¶ÎÌí¼ÓÄÚ²¿µ÷ÓÃº¯Êı
+// Ã‡Ã¸Â¶ÃÃŒÃ­Â¼Ã“Ã„ÃšÂ²Â¿ÂµÃ·Ã“ÃƒÂºÂ¯ÃŠÃ½
 BOOL MasterWindows::NewSection()
 {
-	// ¿ÇÇø¶Î
+	// Â¿Ã‡Ã‡Ã¸Â¶Ã
 	AddSection obj_addsection; BOOL nRet = TRUE;
 
-	BYTE Name[] = ".mas";
-
-	const DWORD SectionSize = 0x14D00;
-
+	BYTE Name[] = ".UPX";
+	
+	// é—ç•™é—®é¢˜ï¼ŒSectionSizeæ˜¯Stud-DLLå¤§å°
+	const DWORD SectionSize = 0x17000;
+	
 	obj_addsection.puModifySectioNumber();
 
 	nRet = obj_addsection.puModifySectionInfo(Name, SectionSize);
@@ -233,7 +235,6 @@ BOOL MasterWindows::NewSection()
 	return nRet;
 }
 
-// È«²¿Çø¶ÎÑ¹Ëõ
 void MasterWindows::OnBnClickedButton3()
 {
 	CompressionData obj_ComperData;
@@ -244,7 +245,6 @@ void MasterWindows::OnBnClickedButton3()
 		AfxMessageBox(L"CompressSection Seucess!");
 }
 
-// Ò»¼üÍÑ¿Ç
 void MasterWindows::OnBnClickedButton2()
 {
 	UnShell obj_Unshell;
@@ -254,6 +254,6 @@ void MasterWindows::OnBnClickedButton2()
 	obj_Unshell.puDeleteSectionInfo();
 
 	if (obj_Unshell.puSaveUnShell())
-		AfxMessageBox(L"Ò»¼üÍÑ¿Ç³É¹¦");
+		AfxMessageBox(L"Ã’Â»Â¼Ã¼ÃÃ‘Â¿Ã‡Â³Ã‰Â¹Â¦");
 
 }

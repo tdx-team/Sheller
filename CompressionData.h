@@ -1,12 +1,15 @@
-#pragma once
+ï»¿#pragma once
 #ifndef COMPRESSIONDATA_H_
 #define COMPRESSIONDATA_H_
 #include "stdafx.h"
 
 /*
-	ÀàÃû³Æ£ºCompressionData
-	ÓÃÍ¾£ºÑ¹ËõPEÊı¾İ
-	Ê±¼ä£º2018/12/1	
+	ç±»åç§°ï¼šCompressionData
+	ç”¨é€”ï¼šå‹ç¼©PEæ•°æ®
+	æ—¶é—´ï¼š2018/12/1
+
+	new decode
+	timeï¼š2020/9/1
 */
 
 class CompressionData
@@ -17,38 +20,40 @@ public:
 
 public:
 	// void puAddCompresData(){ this->AddCompreDataSection(); }
-	BOOL puCompressSection(){ return this->CompressSectionData(); }
+	BOOL puCompressSection() { return this->CompressSectionData(); }
 	// void puCleanDirectData(char* NewAddress){ this->CleanDirectData(NewAddress); }
-	HANDLE puGetStubBase(){ return this->m_studBase; }
+	HANDLE puGetStubBase() { return this->m_studBase; }
 
 private:
-	// Ñ¹ËõPEÇø¶ÎÊı¾İ
+	// å‹ç¼©PEåŒºæ®µæ•°æ®
 	BOOL CompressSectionData();
-	// Çå¿ÕÊı¾İÄ¿Â¼±í
+	// åŠ å¯†PEåŒºæ®µæ•°æ®
+	BOOL EncryptionSectionData(char* src, int srclen, char enkey);
+	// æ¸…ç©ºæ•°æ®ç›®å½•è¡¨
 	BOOL CleanDirectData(const char* NewAddress, const DWORD & CompresSize, const DWORD & Size);
-	// ÅĞ¶ÏÕæÕıµÄÇø¶ÎÊı¾İ´óĞ¡£¨Î´¶ÔÆë£©
+	// åˆ¤æ–­çœŸæ­£çš„åŒºæ®µæ•°æ®å¤§å°ï¼ˆæœªå¯¹é½ï¼‰
 	DWORD IsSectionSize(DWORD MiscVirtualsize, DWORD sizeOfRawData);
-	// Ìí¼ÓÒ»¸öÇø¶Î¸øÑ¹ËõºóµÄÊı¾İÊ¹ÓÃ
+	// æ·»åŠ ä¸€ä¸ªåŒºæ®µç»™å‹ç¼©åçš„æ•°æ®ä½¿ç”¨
 	void AddCompreDataSection(const DWORD & size);
 
 private:
-	// »ñÈ¡»ùÖ·
+	// è·å–åŸºå€
 	static void* m_lpBase;
-	// ±£´æÇø¶ÎÍ·
+	// ä¿å­˜åŒºæ®µå¤´
 	void* m_SectionHeadre = nullptr;
-	// ±£´æÎÄ¼ş´óĞ¡
+	// ä¿å­˜æ–‡ä»¶å¤§å°
 	DWORD m_hFileSize = 0;
-	// ±£´æÇø¶Î¸öÊı
+	// ä¿å­˜åŒºæ®µä¸ªæ•°
 	DWORD m_SectionCount = 0;
-	// »ñÈ¡ÎÄ¼ş¾ä±ú
+	// è·å–æ–‡ä»¶å¥æŸ„
 	void* m_hFile = nullptr;
-	// ±£´æ¼ÓÔØstubµÄµØÖ·
+	// ä¿å­˜åŠ è½½stubçš„åœ°å€
 	static HANDLE m_studBase;
-	// ±£´æmask¿ÇÇø¶ÎµØÖ·
+	// ä¿å­˜maskå£³åŒºæ®µåœ°å€
 	PIMAGE_SECTION_HEADER m_maskAddress;
-	// ±£´æÎÄ¼şÃû³Æ¸üĞÂ
+	// ä¿å­˜æ–‡ä»¶åç§°æ›´æ–°
 	CString FileName;
-	// ÎÄ¼ş¾ä±ú
+	// æ–‡ä»¶å¥æŸ„
 	FILE* fpFile = nullptr;
 };
 

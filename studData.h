@@ -43,12 +43,15 @@ private:
 	void* m_lpBase = nullptr;
 	// 保存新区段的起始地址
 	DWORD m_dwNewSectionAddress = 0;
+	DWORD64 m_dwNewSectionAddress64 = 0;
 	// stud原区段的起始位置
 	DWORD m_dwStudSectionAddress = 0;
+	DWORD64 m_dwStudSectionAddress64 = 0;
 	// 保存OEP原始
-	DWORD m_Oep = 0;
+	DWORD64 m_Oep = 0;
 	// 保存ImageBase
 	DWORD m_ImageBase = 0;
+	DWORD64 m_ImageBase64 = 0;
 };
 
 #endif
