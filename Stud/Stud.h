@@ -1,38 +1,49 @@
-#pragma once
+ï»¿#pragma once
 #ifndef STUD_H_
 #define STUD_H_
 #include <Windows.h>
 
-
+#ifdef _WIN64
+typedef struct _Stud
+{
+	DWORD64 s_dwOepBase;
+	DWORD64 s_Krenel32;
+	DWORD64 s_User32;
+	DWORD64 s_Gdi32;
+	DWORD64 s_MSVCRT;
+	HMODULE s_ModuleUser32;
+	DWORD64 s_DirectoryCount;
+	DWORD64 s_SectionCount;
+	DWORD64 s_DataDirectory[16][2];
+	DWORD s_SectionOffsetAndSize[20][2];
+	DWORD s_blen[20];
+	BOOL s_OneSectionSizeofData;
+	DWORD64 s_CompressionSectionRva;
+	DWORD64 s_SaveExportTabRVA;
+}Stud;
+#else
 //  /NODEFAULTLIB:LIBCMT.lib 
 typedef struct _Stud
 {
-	// »ñÈ¡Ä£¿é»ùÖ·±£´æ
 	DWORD s_dwOepBase;
 	DWORD s_Krenel32;
 	DWORD s_User32;
 	DWORD s_Gdi32;
 	DWORD s_MSVCRT;
-	// ±£´æÊı¾İÄ¿Â¼±í¸öÊı
 	DWORD s_DirectoryCount;
-	// ±£´æÇø¶Î¸öÊı
 	DWORD s_SectionCount;
-	// ±£´æÊı¾İÄ¿Â¼±í Êı¾İÄ¿Â¼16¸ö ±£´æRVAÒÔ¼°Size[2][4]
 	DWORD s_DataDirectory[16][2];
-	// ±£´æÇø¶ÎÎÄ¼şÆ«ÒÆÒÔ¼°Êı¾İ´óĞ¡ Çø¶Î×î´óÉèÖÃ20¸ö£¨Êµ¼Ê10¼¸¸öÇø¶Î×ã¹»£©
 	DWORD s_SectionOffsetAndSize[20][2];
-	// ¼ÆËã»º³åÇø´óĞ¡£¬²¢ÎªÆä·ÖÅäÄÚ´æ 
 	DWORD s_blen[20];
-	// ±ê¼ÇµÚÒ»¸ö´úÂë¶ÎÊÇ·ñÎª0
 	BOOL s_OneSectionSizeofData;
-	// Ñ¹ËõÊı¾İµÄÇø¶ÎRVA(ÊµÏÖ¼ÓÔØÄÚ´æºóÕÒµ½Ñ¹ËõµÄÊı¾İ)
 	DWORD s_CompressionSectionRva;
-	// ±£´æµ¼³ö±íµÄRVA
 	DWORD s_SaveExportTabRVA;
 }Stud;
-
+#endif
+#endif
 /*
-	Hash¼ÓÃÜ²ÎÕÕ±í(ÓĞ¿ÉÄÜÓÃµ½µÄ)£º
+		Function Hash Values:
+			0x228C4218			KERNEL32.DLL - 64bit
 			0xEC1C6278;			kernel32.dll
 			0xC0D83287;			LoadlibraryExa
 			0x4FD18963;			ExitPorcess
@@ -60,10 +71,6 @@ typedef struct _Stud
 			0x5D0CB479			GetDlgItem
 			0x818F6ED7			Mymemcpy
 			0x328CEB95			msvcrt.dll
+			0x1EDE5967			VirtualAlloc
+			0x2729F8BB			CreateThread		
 */
-// »ñÈ¡Ä£¿é»ùÖ·£¬±ÈÈçkernel32.dll
-DWORD puGetModule(const DWORD Hash);
-// »ñÈ¡º¯ÊıVA»ùÖ·£¨ÖØĞ´GetProcAddress£©
-DWORD puGetProcAddress(const DWORD dllvalues, const DWORD Hash);
-
-#endif
